@@ -28,10 +28,16 @@ X_test[['Age']] = imputer.transform(X_test[['Age']])
 
 X_train['Embarked'] = X_train['Embarked'].fillna('S')
 X_test['Embarked'] = X_test['Embarked'].fillna('S')
-
+# X_train['Embarked'] = X_train['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
+# X_test['Embarked'] = X_test['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
 
 X_train['Fare'] = imputer.fit_transform(X_train[['Fare']])
 X_test['Fare'] = imputer.transform(X_test[['Fare']])
+
+X_train.to_csv('X_train.csv',index=False)
+Y_train.to_csv('Y_train.csv',index=False)
+X_test.to_csv('X_test.csv',index=False)
+Y_test.to_csv('Y_test.csv',index=False)
 
 onehot_encoder = OneHotEncoder()
 
@@ -42,13 +48,17 @@ preprocessor = ColumnTransformer(
     remainder='passthrough'  
 )
 
+X_train = preprocessor.fit_transform(X_train)
+X_test = preprocessor.fit_transform(X_test)
+
+pd.DataFrame(X_train).to_csv('X_train_encoded.csv')
+pd.DataFrame(X_test).to_csv('X_test_encoded.csv')
+
+print(X_train)
+print(X_test)
 
 
 
-X_train.to_csv('X_train.csv',index=False)
-Y_train.to_csv('Y_train.csv',index=False)
-X_test.to_csv('X_test.csv',index=False)
-Y_test.to_csv('Y_test.csv',index=False)
 
 
 clf = DecisionTreeClassifier(
@@ -62,21 +72,6 @@ clf = DecisionTreeClassifier(
 )
 
 
-param_grid = {
-    'criterion': ['gini', 'entropy'],
-    'splitter': ['best', 'random'],
-    'max_depth': [None, 3,4,5,6,7,8],
-    'min_samples_split': [2,3,4,5,6,7],
-    'min_samples_leaf': [1, 3, 5, 6, 7, 8],
-    'max_features': [None, 'sqrt', 'log2']
-}
-
-grid_search = GridSearchCV(estimator=clf, param_grid=param_grid, 
-                           scoring='accuracy', cv=5, n_jobs=-1, verbose=1)
-grid_search.fit(X_train, Y_train)
-
-print("Best parameters found: ", grid_search.best_params_)
-print("Best cross-validation accuracy: {:.2f}".format(grid_search.best_score_))
 
 pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor),
@@ -99,6 +94,24 @@ print(f'模型准确率: {accuracy * 100:.2f}%')
 
 Y_pred_df = pd.DataFrame(Y_pred)
 Y_pred_df.to_csv('Y_predict.csv',index=False)
+
+
+# 网格搜索最优参数
+param_grid = {
+    'criterion': ['gini', 'entropy'],
+    'splitter': ['best', 'random'],
+    'max_depth': [None, 3,4,5,6,7,8],
+    'min_samples_split': [2,3,4,5,6,7],
+    'min_samples_leaf': [1, 3, 5, 6, 7, 8],
+    'max_features': [None, 'sqrt', 'log2']
+}
+
+grid_search = GridSearchCV(estimator=clf, param_grid=param_grid, 
+                           scoring='accuracy', cv=5, n_jobs=-1, verbose=1)
+grid_search.fit(X_train, Y_train)
+
+print("Best parameters found: ", grid_search.best_params_)
+print("Best cross-validation accuracy: {:.2f}".format(grid_search.best_score_))
 
 
 # 绘制学习曲线
